@@ -1,19 +1,4 @@
-[submodule "Tools/kraffiti"]
-	path = Tools/kraffiti
-	url = https://github.com/Kode/kraffiti_bin.git
-	branch = master
-	shallow = true
-[submodule "Tools/krafix"]
-	path = Tools/krafix
-	url = https://github.com/Kode/krafix_bin.git
-	branch = master
-	shallow = true
 [submodule "Tools/kincmake"]
 	path = Tools/kincmake
 	url = https://github.com/Kode/kincmake.git
 	branch = master
-[submodule "Tools/kmake"]
-	path = Tools/kmake
-	url = https://github.com/Kode/kmake_bin.git
-	branch = main
-	shallow = true

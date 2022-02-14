@@ -1,1 +1,0 @@
-call %~dp0Tools\kmake\kmake.exe %*
