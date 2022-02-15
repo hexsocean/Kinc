@@ -19,7 +19,6 @@ fblobRecurse(KINC_FILES Sources)
 # for OS specifics.
 set(KINC_LIB_TYPE "STATIC")
 
-
 if(${KINC_PLATFORM} STREQUAL "WindowsApp")
 # set(KINC_LIB_TYPE "SHARED")
 endif(${KINC_PLATFORM} STREQUAL "WindowsApp")
