@@ -15,8 +15,16 @@ endfunction(fblobRecurse out pathTo)
 
 fblobRecurse(KINC_FILES Sources)
 
-# add the executable
-add_library(Kinc STATIC ${KINC_FILES})
+# WindowsApps aren't supposed to have static stuff
+# for OS specifics.
+set(KINC_LIB_TYPE "STATIC")
+
+
+if(${KINC_PLATFORM} STREQUAL "WindowsApp")
+# set(KINC_LIB_TYPE "SHARED")
+endif(${KINC_PLATFORM} STREQUAL "WindowsApp")
+
+add_library(Kinc ${KINC_LIB_TYPE} ${KINC_FILES})
 target_compile_features(Kinc PUBLIC cxx_std_17)
 target_compile_definitions(Kinc PUBLIC
     KORE_G1
@@ -238,15 +246,16 @@ elseif(${KINC_PLATFORM} STREQUAL "WindowsApp")
     addBackend("System/WindowsApp")
     addBackend("System/Microsoft")
     addBackend("Graphics4/Direct3D11")
-    addBackend("Audio2/WASAPI")
+    addBackend("Audio2/WASAPI") 
 
     target_compile_definitions(Kinc PRIVATE
         _CRT_SECURE_NO_WARNINGS
     )
     target_compile_options(Kinc PRIVATE "/ZW")
-    add_link_options("/MD" "/WINMD")
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -AI\"C:/Program Files/Microsoft Visual Studio/2022/Preview/Common7/IDE/VC/vcpackages\"" )
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -AI\"C:/Program Files (x86)/Windows Kits/10/UnionMetadata/10.0.19041.0\"" )
+    add_link_options("/MD" "/WINMD" "/WHOLEARCHIVE")
     set(CMAKE_SYSTEM_NAME "WindowsStore")
-    set(CMAKE_SYSTEM_VERSION 10.0)
     message("${CMAKE_SYSTEM_VERSION}")
 else()
     set(KINC_PROP_PLUGIN TRUE)
