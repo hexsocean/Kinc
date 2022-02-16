@@ -23,18 +23,6 @@ if(${KINC_PLATFORM} STREQUAL "WindowsApp")
 # set(KINC_LIB_TYPE "SHARED")
 endif(${KINC_PLATFORM} STREQUAL "WindowsApp")
 
-add_library(Kinc ${KINC_LIB_TYPE} ${KINC_FILES})
-target_compile_features(Kinc PUBLIC cxx_std_17)
-target_compile_definitions(Kinc PUBLIC
-    KORE_G1
-    KORE_G2
-    KORE_G3
-    KORE_A1
-    KORE_A2
-    KORE_A3
-)
-target_include_directories(Kinc PUBLIC Sources)
-
 set(KINC_PLATFORM "Windows" CACHE STRING "Target Platform")
 set_property(CACHE KINC_PLATFORM PROPERTY STRINGS
     Windows
@@ -84,6 +72,19 @@ set_property(CACHE KINC_VR_API PROPERTY STRINGS
     HoloLens
     None
 )
+
+add_library(Kinc ${KINC_LIB_TYPE} ${KINC_FILES})
+
+target_compile_features(Kinc PUBLIC cxx_std_17)
+target_compile_definitions(Kinc PUBLIC
+    KORE_G1
+    KORE_G2
+    KORE_G3
+    KORE_A1
+    KORE_A2
+    KORE_A3
+)
+target_include_directories(Kinc PUBLIC Sources)
 
 function(addBackend backendName)
     fblobRecurse(BACKENDFILES Backends/${backendName}/Sources)
@@ -251,11 +252,125 @@ elseif(${KINC_PLATFORM} STREQUAL "WindowsApp")
         _CRT_SECURE_NO_WARNINGS
     )
     target_compile_options(Kinc PRIVATE "/ZW")
-    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -AI\"C:/Program Files/Microsoft Visual Studio/2022/Preview/Common7/IDE/VC/vcpackages\"" )
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -AI\"C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/VC/vcpackages\"" )
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -AI\"C:/Program Files (x86)/Windows Kits/10/UnionMetadata/10.0.19041.0\"" )
-    add_link_options("/MD" "/WINMD" "/WHOLEARCHIVE")
+    set( STATIC_LIBRARY_OPTIONS "${STATIC_LIBRARY_OPTIONS} /WHOLEARCHIVE")
+    # add_link_options("/MD" "/WINMD" "/WHOLEARCHIVE")
     set(CMAKE_SYSTEM_NAME "WindowsStore")
     message("${CMAKE_SYSTEM_VERSION}")
+elseif(${KINC_PLATFORM} STREQUAL "OSX")
+    target_compile_definitions(Kinc PUBLIC
+        KORE_MACOS
+    )
+    addBackend("System/Apple")
+    addBackend("System/macOS")
+    addBackend("System/POSIX")
+    if((${KINC_GRAPHICS_API} STREQUAL "Metal") OR (${KINC_GRAPHICS_API} STREQUAL "Default"))
+        set(G4 TRUE)
+        set(G5 TRUE)
+        addBackend("Graphics5/Metal")
+        target_compile_definitions(Kinc PUBLIC
+            KORE_METAL
+        )
+        target_link_libraries(Kinc
+            PUBLIC
+            Metal
+            MetalKit
+        )
+    elseif(${KINC_GRAPHICS_API} STREQUAL "OpenGL1")
+        addBackend("Graphics3/OpenGL1")
+        target_compile_definitions(Kinc PUBLIC
+            KORE_OPENGL1
+        )
+        target_link_libraries(Kinc
+            PUBLIC
+            OpenGL
+        )
+    elseif(${KINC_GRAPHICS_API} STREQUAL "OpenGL")
+        set(G4 TRUE)
+        addBackend("Graphics4/OpenGL")
+        target_compile_definitions(Kinc PUBLIC
+            KORE_OPENGL
+        )
+        target_link_libraries(Kinc
+            PUBLIC
+            OpenGL
+        )
+    else()
+        message(FATAL_ERROR "Graphics API ${KINC_GRAPHICS_API} is not available on OSX")
+    endif((${KINC_GRAPHICS_API} STREQUAL "Metal") OR (${KINC_GRAPHICS_API} STREQUAL "Default"))
+    
+    target_link_libraries(Kinc
+        PUBLIC
+        IOKit
+        Cocoa
+        AppKit
+        CoreAudio
+        CoreData
+        CoreMedia
+        CoreVideo
+        AVFoundation
+        Foundation
+    )
+    target_compile_definitions(Kinc PUBLIC
+        KORE_POSIX
+    )
+elseif((${KINC_PLATFORM} STREQUAL "iOS") OR (${KINC_PLATFORM} STREQUAL "tvOS"))
+    if(${KINC_PLATFORM} STREQUAL "tvOS")
+        target_compile_definitions(Kinc PUBLIC
+            KORE_TVOS
+        )
+    else()
+        target_compile_definitions(Kinc PUBLIC
+            KORE_IOS
+        )
+    endif(${KINC_PLATFORM} STREQUAL "tvOS")
+    addBackend("System/Apple")
+	addBackend("System/iOS")
+	addBackend("System/POSIX")
+    if((${KINC_GRAPHICS_API} STREQUAL "Metal") OR (${KINC_GRAPHICS_API} STREQUAL "Default"))
+        set(G4 TRUE)
+        set(G5 TRUE)
+        addBackend("Graphics5/Metal")
+        target_compile_definitions(Kinc PUBLIC
+            KORE_METAL
+        )
+        target_link_libraries(Kinc
+            PUBLIC
+            Metal
+        )
+    elseif(${KINC_GRAPHICS_API} STREQUAL "OpenGL")
+        set(G4 TRUE)
+        addBackend("Graphics4/OpenGL")
+        target_compile_definitions(Kinc PUBLIC
+            KORE_OPENGL
+            KORE_OPENGL_ES
+        )
+        target_link_libraries(Kinc
+            PUBLIC
+            OpenGLES
+        )
+    else()
+        message(FATAL_ERROR "Graphics API ${KINC_GRAPHICS_API} is not available on OSX")
+    endif((${KINC_GRAPHICS_API} STREQUAL "Metal") OR (${KINC_GRAPHICS_API} STREQUAL "Default"))
+
+    target_link_libraries(Kinc
+        PUBLIC
+        UIKit
+        Foundation
+        CoreGraphics
+        QuartzCore
+        CoreAudio
+        AudioToolbox
+        CoreMotion
+        AVFoundation
+        CoreFoundation
+        CoreVideo
+        CoreMedia
+    )
+    target_compile_definitions(Kinc PUBLIC
+        KORE_POSIX
+    )
 else()
     set(KINC_PROP_PLUGIN TRUE)
     set(G4 TRUE)
@@ -277,3 +392,18 @@ else()
 endif(${G5})
 
 addBackend("Audio3/A3onA2")
+
+if (${KINC_PROP_PLUGIN})
+    set(KINC_PLUGIN_BACKEND "Unknown")
+    if(${KINC_PLATFORM} STREQUAL "PS4")
+        set(KINC_PLUGIN_BACKEND "PlayStation4")
+    elseif(${KINC_PLATFORM} STREQUAL "XboxOne")
+        set(KINC_PLUGIN_BACKEND "XboxOne")
+    elseif(${KINC_PLATFORM} STREQUAL "XboxOne")
+        set(KINC_PLUGIN_BACKEND "XboxScarlett")
+    elseif(${KINC_PLATFORM} STREQUAL "PS5")
+        set(KINC_PLUGIN_BACKEND "PlayStation5")
+    endif(${KINC_PLATFORM} STREQUAL "PS4")
+    
+    include("${PROJECT_SOURCE_DIR}/Backends/${KINC_PLUGIN_BACKEND}")
+endif(${KINC_PROP_PLUGIN})
